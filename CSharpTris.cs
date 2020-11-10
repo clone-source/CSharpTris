@@ -5,15 +5,33 @@ using System.Windows.Forms;
 
 namespace CSharpTris
 {
-    sealed class CSharpTris : Form
+    class Player
     {
-        private Thread _gameThread;
+        public float X { get; set; }
+        public float Y { get; set; }
+        public float Width { get; }
+        public float Height { get; }
+
+        public Player(float x, float y, float width, float height)
+        {
+            X = x;
+            Y = y;
+            Width = width;
+            Height = height;
+        }
+    }
+
+    internal sealed class CSharpTris : Form
+    {
+        private Thread _loopThread;
         private ManualResetEvent _closeGameEvent;
         private const int FrameSize = 15;
-        private double _x;
+
+        private readonly Player _player;
 
         public CSharpTris()
         {
+            _player = new Player(0, 0, 20, 20);
             Text = @"Pong";
             Size = new Size(800, 600);
             StartPosition = FormStartPosition.CenterScreen;
@@ -29,31 +47,26 @@ namespace CSharpTris
 
         private bool IsStuck(IAsyncResult invokerResult)
         {
+            if (invokerResult.AsyncWaitHandle.WaitOne(0)) return false;
+
             // invokerResult exists but the wait handle is not ready yet
             // it's been `FrameSize` milliseconds already so we to get us out of the slowness
-            if (!invokerResult.AsyncWaitHandle.WaitOne(0))
-            {
-                // if both _resetEvent and invokerResult's WaitHandle are nowhere to be seen
-                // let's get out of the loop
-                if (WaitHandle.WaitAny(
-                    new[]
-                    {
-                        _closeGameEvent,
-                        invokerResult.AsyncWaitHandle
-                    }) == 0)
-                {
-                    return true;
-                }
-            }
 
-            return false;
+            // if both _resetEvent and invokerResult's WaitHandle are nowhere to be seen
+            // let's get out of the loop
+            return WaitHandle.WaitAny(
+                new[]
+                {
+                    _closeGameEvent,
+                    invokerResult.AsyncWaitHandle
+                }) == 0;
         }
 
         private void Loop()
         {
             // invoker is in charge of getting a handle on the Main Thread and invoke BuildFrame
             IAsyncResult invokerResult = null;
-            bool running = true;
+            var running = true;
 
             while (running)
             {
@@ -62,6 +75,7 @@ namespace CSharpTris
                     return;
                 }
 
+                // Now tell main thread to build the frame
                 invokerResult = BeginInvoke(new MethodInvoker(BuildFrame));
 
                 // wait for the remainder of the frame and then let the loop loop
@@ -78,35 +92,47 @@ namespace CSharpTris
 
         private void Compute()
         {
-            _x += 1;
+            const float dt = 15 / 1000f;
+
+            _player.X += 55 * dt;
+            _player.Y += 111 * dt;
+
+            if (_player.X > Width)
+            {
+                _player.X = -_player.Width;
+            }
+
+            if (_player.Y > Height)
+            {
+                _player.Y = -_player.Height;
+            }
         }
 
-        private void ExitGame()
-        {
-            Close();
-        }
+        // private void ExitGame()
+        // {
+        //     Close();
+        // }
 
         protected override void OnPaint(PaintEventArgs e)
         {
             var g = e.Graphics;
             g.Clear(Color.White);
 
-            g.DrawRectangle(new Pen(Color.Brown), (float) _x, (float) _x, 20, 20);
+            g.FillRectangle(Brushes.Brown, _player.X, _player.Y, 20, 20);
         }
 
         protected override void OnLoad(EventArgs e)
         {
             base.OnLoad(e);
             _closeGameEvent = new ManualResetEvent(false);
-            _gameThread = new Thread(Loop);
-            _gameThread.Name = "Game Thread";
-            _gameThread.Start();
+            _loopThread = new Thread(Loop) {Name = "Game Thread"};
+            _loopThread.Start();
         }
 
         protected override void OnClosed(EventArgs e)
         {
             _closeGameEvent.Set();
-            _gameThread.Join();
+            _loopThread.Join();
             _closeGameEvent.Close();
             base.OnClosed(e);
         }
