@@ -26,6 +26,8 @@ namespace CSharpTris
         private Thread _loopThread;
         private ManualResetEvent _closeGameEvent;
         private const int FrameSize = 15;
+        readonly Bitmap _buffer ;
+        readonly Graphics _bufferG;
 
         private readonly Player _player;
 
@@ -34,6 +36,8 @@ namespace CSharpTris
             _player = new Player(0, 0, 20, 20);
             Text = @"Pong";
             Size = new Size(800, 600);
+            _buffer = new Bitmap(Width, Height);
+            _bufferG = Graphics.FromImage(_buffer);
             StartPosition = FormStartPosition.CenterScreen;
             FormBorderStyle = FormBorderStyle.Fixed3D;
             DoubleBuffered = true;
@@ -116,9 +120,9 @@ namespace CSharpTris
         protected override void OnPaint(PaintEventArgs e)
         {
             var g = e.Graphics;
-            g.Clear(Color.White);
-
-            g.FillRectangle(Brushes.Brown, _player.X, _player.Y, 20, 20);
+            _bufferG.Clear(Color.White);
+            _bufferG.FillRectangle(Brushes.Brown, _player.X, _player.Y, 20, 20);
+            g.DrawImage(_buffer, 0, 0, Width, Height);
         }
 
         protected override void OnLoad(EventArgs e)
