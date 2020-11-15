@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Windows.Forms;
 using CSharpTris.Engine;
 
@@ -9,7 +10,9 @@ namespace CSharpTris
         [STAThread]
         static void Main()
         {
-            Application.Run(new Game(800, 600).Form);
+            Debug.WriteLine(GameConfig.CanvasWidth);
+            Debug.WriteLine(GameConfig.CanvasHeight);
+            Application.Run(new Game(GameConfig.CanvasWidth, GameConfig.CanvasHeight).Form);
         }
     }
 }

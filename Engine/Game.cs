@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Windows.Forms;
+using Hello = CSharpTris.Screens.Hello;
 
 namespace CSharpTris.Engine
 {
@@ -18,7 +19,7 @@ namespace CSharpTris.Engine
         {
             Width = width;
             Height = height;
-            Form = new Form(width, height);
+            Form = new Form(width, height, new Hello.Screen());
 
             Form.Load += OnLoad;
             Form.Closed += OnClosed;
